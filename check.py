@@ -22,12 +22,11 @@ def get_latest_news():
     today = datetime.now(timezone.utc)
 
     valid_news = [
-        n for n in data.get("data", [])
-        if n.get("status") == "published"
-        and "by*" in n.get("tags", [])
-        #and n.get("show_on_homepage") is True
-        #and n.get("tenant") == "visas-it"
-        #and n.get("publish_date") <= today.isoformat()
+      n for n in data.get("data", [])
+    if n.get("status") == "published"
+    and n.get("tenant") == "visa-it"
+    and n.get("show_on_homepage") is True
+    and "by*" in n.get("tags", [])
     ]
 
     if not valid_news:
