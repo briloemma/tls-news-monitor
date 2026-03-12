@@ -24,6 +24,7 @@ def get_latest_news():
     valid_news = [
         n for n in data.get("data", [])
         if n.get("status") == "published"
+        and "byMSQ2it" in n.get("tags", [])
         #and n.get("show_on_homepage") is True
         #and n.get("tenant") == "visas-it"
         #and n.get("publish_date") <= today.isoformat()
