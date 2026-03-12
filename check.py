@@ -35,14 +35,43 @@ send_sync("✅ Тест: мониторинг TLS работает")
 
 # --- Функция получения последнего заголовка новости ---
 def get_latest_news():
+    import random
+
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
-        page = browser.new_page()
-        page.goto(URL)
-        page.wait_for_load_state("networkidle")
+        browser = p.chromium.launch(
+            headless=True,
+            args=[
+                "--no-sandbox",
+                "--disable-blink-features=AutomationControlled"
+            ]
+        )
+
+        context = browser.new_context(
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+            viewport={"width": 1920, "height": 1080},
+            locale="en-US"
+        )
+
+        # скрываем webdriver
+        context.add_init_script("""
+        Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined
+        })
+        """)
+
+        page = context.new_page()
+
+        page.goto(URL, wait_until="domcontentloaded")
+
+        # случайная задержка как у человека
+        page.wait_for_timeout(random.randint(3000,7000))
+
         title_element = page.locator("h2").first
+
         title = title_element.inner_text().strip() if title_element else None
+
         browser.close()
+
         return title
 
 # --- Основная логика проверки новости ---
