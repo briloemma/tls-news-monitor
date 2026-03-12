@@ -8,6 +8,8 @@ URL = "https://visas-it.tlscontact.com/en-us/country/by/vac/byMSQ2it/news"
 
 bot = Bot(token=BOT_TOKEN)
 
+send("✅ Тест: мониторинг TLS работает")
+
 def send(msg):
     bot.send_message(chat_id=CHAT_ID, text=msg)
 
