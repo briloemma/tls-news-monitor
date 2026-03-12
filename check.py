@@ -18,17 +18,26 @@ def get_latest_news():
     r = requests.get(NEWS_URL)
     data = r.json()
 
-    if not data.get("data"):
-        raise ValueError("Нет данных в API")
+    # берём только опубликованные новости с publish_date <= сегодня
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc)
 
-    news = data["data"][0]
+    valid_news = [
+        n for n in data.get("data", [])
+        if n.get("status") == "published" and n.get("publish_date") <= today.isoformat()
+    ]
+
+    if not valid_news:
+        raise ValueError("Нет актуальных новостей")
+
+    news = valid_news[0]  # самая новая актуальная
     news_id = str(news["id"])
 
     translation_id = news["translations"][0]
     r2 = requests.get(f"{TRANSLATION_URL}/{translation_id}")
     translation_data = r2.json()
 
-    title = translation_data["data"]["title"] 
+    title = translation_data["data"]["title"]
     return news_id, title
 
 async def main():
