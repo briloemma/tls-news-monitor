@@ -24,7 +24,6 @@ jobs:
       - name: Install dependencies
         run: |
           pip install python-telegram-bot playwright
-          playwright install chromium
 
       - name: Run TLS check
         run: python check.py
