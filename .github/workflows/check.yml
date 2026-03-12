@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: "*/5 * * * *"  # каждые 5 минут
 
+permissions:
+  contents: write
+
 jobs:
   check:
     runs-on: ubuntu-latest
