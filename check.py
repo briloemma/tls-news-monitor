@@ -9,14 +9,31 @@ URL = "https://visas-it.tlscontact.com/en-us/country/by/vac/byMSQ2it/news"
 
 bot = Bot(token=BOT_TOKEN)
 
+# --- Функция отправки сообщений ---
 async def send(msg):
-    await bot.send_message(chat_id=CHAT_ID, text=msg)
-    print("Telegram message sent!")
+    try:
+        await bot.send_message(chat_id=CHAT_ID, text=msg)
+        print("Telegram message sent!")
+    except Exception as e:
+        print(f"Failed to send Telegram message: {e}")
 
-# --- Тестовое уведомление ---
-asyncio.run(send("✅ Тест: мониторинг TLS работает"))
+# --- Вспомогательная функция для запуска async в любом loop ---
+def send_sync(msg):
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+    if loop.is_running():
+        # если loop уже работает (на GitHub Actions), запускаем через create_task
+        asyncio.ensure_future(send(msg))
+    else:
+        loop.run_until_complete(send(msg))
 
-# --- Playwright для получения новости ---
+# --- ТЕСТОВОЕ УВЕДОМЛЕНИЕ ---
+send_sync("✅ Тест: мониторинг TLS работает")
+
+# --- Функция получения последнего заголовка новости ---
 def get_latest_news():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
@@ -28,11 +45,11 @@ def get_latest_news():
         browser.close()
         return title
 
-# --- Основная логика ---
+# --- Основная логика проверки новости ---
 try:
     latest = get_latest_news()
 except Exception as e:
-    asyncio.run(send(f"❗ Ошибка загрузки страницы: {e}"))
+    send_sync(f"❗ Ошибка загрузки страницы: {e}")
     latest = None
 
 # --- Сравнение с предыдущей новостью ---
@@ -43,6 +60,6 @@ except FileNotFoundError:
     last = ""
 
 if latest and latest != last:
-    asyncio.run(send(f"🚨 Новая новость на TLSContact:\n\n{latest}\n{URL}"))
+    send_sync(f"🚨 Новая новость на TLSContact:\n\n{latest}\n{URL}")
     with open("last.txt", "w") as f:
         f.write(latest)
