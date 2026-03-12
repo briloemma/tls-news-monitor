@@ -13,6 +13,8 @@ def send(msg):
         data={"chat_id": CHAT_ID, "text": msg}
     )
 
+send("✅ Тест: мониторинг TLS работает")
+
 r = requests.get(URL, headers={"User-Agent": "Mozilla/5.0"})
 soup = BeautifulSoup(r.text, "html.parser")
 
