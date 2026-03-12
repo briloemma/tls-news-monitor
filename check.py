@@ -6,7 +6,7 @@ from telegram import Bot
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
-NEWS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news"
+NEWS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news?limit=1000"
 TRANSLATION_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news_translations"
 
 bot = Bot(token=BOT_TOKEN)
@@ -31,7 +31,7 @@ async def get_latest_news(session):
         n for n in data.get("data", [])
         if n.get("status") == "published"
         and n.get("tenant") == "visa-it"
-        and n.get("show_on_homepage") is True
+        and n.get("show_on_homepage")
         and any(t in ["byMSQ2it", "by*"] for t in n.get("tags", []))
     ]
 
