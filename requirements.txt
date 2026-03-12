@@ -1,0 +1,2 @@
+requests
+python-dotenv   # если используете .env для BOT_TOKEN/CHAT_ID
