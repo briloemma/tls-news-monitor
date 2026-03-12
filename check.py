@@ -7,17 +7,29 @@ BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
 bot = Bot(token=BOT_TOKEN)
-URL = "https://cache-cms.directuscloud.tlscontact.com/items/news"
+NEWS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news"
+TRANSLATION_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news_translations"
 
 async def send(msg):
     await bot.send_message(chat_id=CHAT_ID, text=msg)
     print("Telegram message sent!")
 
 def get_latest_news():
-    r = requests.get(URL)
+    r = requests.get(NEWS_URL)
     data = r.json()
+
+    if not data.get("data"):
+        raise ValueError("Нет данных в API")
+
     news = data["data"][0]
-    return str(news["id"]), news["title"]
+    news_id = str(news["id"])
+
+    translation_id = news["translations"][0]
+    r2 = requests.get(f"{TRANSLATION_URL}/{translation_id}")
+    translation_data = r2.json()
+
+    title = translation_data["data"]["title"] 
+    return news_id, title
 
 async def main():
     try:
