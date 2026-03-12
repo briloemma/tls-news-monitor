@@ -1,2 +1,3 @@
 requests
-python-dotenv   # если используете .env для BOT_TOKEN/CHAT_ID
+python-telegram-bot==20.3
+python-dotenv
