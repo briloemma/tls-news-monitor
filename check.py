@@ -14,30 +14,35 @@ async def send(msg):
     await bot.send_message(chat_id=CHAT_ID, text=msg)
     print("Telegram message sent!")
 
+from datetime import datetime, timezone
+
 def get_latest_news():
     r = requests.get(NEWS_URL)
     data = r.json()
-
-    # берём только опубликованные новости с publish_date <= сегодня
-    from datetime import datetime, timezone
     today = datetime.now(timezone.utc)
 
     valid_news = [
         n for n in data.get("data", [])
-        if n.get("status") == "published" and n.get("publish_date") <= today.isoformat()
+        if n.get("status") == "published"
+        and n.get("show_on_homepage") is True
+        and n.get("tenant") == "visas-it"
+        and n.get("publish_date") <= today.isoformat()
     ]
 
     if not valid_news:
         raise ValueError("Нет актуальных новостей")
 
-    news = valid_news[0]  # самая новая актуальная
-    news_id = str(news["id"])
+    # сортируем по дате публикации или sort
+    valid_news.sort(key=lambda n: n.get("publish_date"), reverse=True)
+    news = valid_news[0]
 
+    news_id = str(news["id"])
     translation_id = news["translations"][0]
+
     r2 = requests.get(f"{TRANSLATION_URL}/{translation_id}")
     translation_data = r2.json()
-
     title = translation_data["data"]["title"]
+
     return news_id, title
 
 async def main():
