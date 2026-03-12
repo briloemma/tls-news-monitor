@@ -23,5 +23,6 @@ jobs:
     - name: Run check
       run: python check.py
       env:
+        FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
         BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         CHAT_ID: ${{ secrets.CHAT_ID }}
