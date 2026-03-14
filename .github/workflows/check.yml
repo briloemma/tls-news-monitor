@@ -3,7 +3,7 @@ name: TLS News Monitor
 on:
   workflow_dispatch:        # кнопка Run workflow
   schedule:
-    - cron: "*/5 * * * *"  # каждые 5 минут
+    - cron: "*/5 * * * 1-5"  # каждые 5 минут
 
 permissions:
   contents: write
