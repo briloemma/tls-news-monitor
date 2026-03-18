@@ -36,7 +36,6 @@ async def get_latest_news(session):
     valid_news = []
 
     for n in data.get("data", []):
-        # фильтруем по статусу и tenant
         if not (
             n.get("status") == "published"
             and n.get("tenant") == "visa-it"
@@ -49,21 +48,19 @@ async def get_latest_news(session):
             if isinstance(t, dict):
                 tag_ids.append(t.get("tags_id"))
             else:
-                tag_ids.append(t)  # старый формат строки
+                tag_ids.append(t)
 
         # получаем slug через tags_map
         tag_slugs = [tags_map.get(i) for i in tag_ids if i is not None]
 
-        # проверяем, есть ли хотя бы один slug для BY
-        if not any(s and s.startswith("by") for s in tag_slugs):
-            continue
-
-        valid_news.append(n)
+        # если тегов нет или есть BY, добавляем новость
+        if not tag_slugs or any(s and s.startswith("by") for s in tag_slugs):
+            valid_news.append(n)
 
     if not valid_news:
         raise ValueError("Нет актуальных новостей")
 
-    # сортировка по дате публикации
+    # сортировка по дате
     valid_news.sort(key=lambda n: n.get("publish_date") or "", reverse=True)
     news = valid_news[0]
     news_id = str(news["id"])
