@@ -44,10 +44,18 @@ async def get_latest_news(session):
         ):
             continue
 
-        tag_slugs = [tags_map.get(t) for t in n.get("tags", [])]
+    tag_ids = []
 
-        if any(s and s.startswith("by") for s in tag_slugs):
-            valid_news.append(n)
+    for t in n.get("tags", []):
+        if isinstance(t, dict):
+        tag_ids.append(t.get("tags_id"))
+    else:
+        tag_ids.append(t)
+
+    tag_slugs = [tags_map.get(i) for i in tag_ids]
+
+    if any(s and "by" in s for s in tag_slugs):
+    valid_news.append(n)
 
     if not valid_news:
         raise ValueError("Нет актуальных новостей")
