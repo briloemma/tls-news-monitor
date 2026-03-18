@@ -6,86 +6,57 @@ from telegram import Bot
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
-NEWS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news?limit=50&sort=-publish_date"
+NEWS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news"
+NEWS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news?limit=1000"
 TRANSLATION_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news_translations"
-TAGS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/tags"
 
 bot = Bot(token=BOT_TOKEN)
-
-
-async def send(msg):
-    await bot.send_message(chat_id=CHAT_ID, text=msg)
-    print("Telegram message sent!")
-
-
-async def fetch_json(session, url):
-    async with session.get(url) as r:
-        return await r.json()
-
-
-async def get_tags(session):
-    data = await fetch_json(session, TAGS_URL)
-    # словарь id -> slug
-    return {t["id"]: t["slug"] for t in data.get("data", [])}
-
-
-async def get_latest_news(session):
-    tags_map = await get_tags(session)
-    data = await fetch_json(session, NEWS_URL)
-
-    valid_news = []
-
-    for n in data.get("data", []):
-        if not (
-            n.get("status") == "published"
-            and n.get("tenant") == "visa-it"
-        ):
-            continue
-
-        # собираем все ID тегов
-        tag_ids = []
-        for t in n.get("tags", []):
-            if isinstance(t, dict):
-                tag_ids.append(t.get("tags_id"))
-            else:
-                tag_ids.append(t)
-
-        # получаем slug через tags_map
-        tag_slugs = [tags_map.get(i) for i in tag_ids if i is not None]
-
-        # если тегов нет или есть BY, добавляем новость
-        if not tag_slugs or any(s and s.startswith("by") for s in tag_slugs):
-            valid_news.append(n)
+@@ -31,70 +31,70 @@
+        n for n in data.get("data", [])
+        if n.get("status") == "published"
+        and n.get("tenant") == "visa-it"
+        and any(t in ["byMSQ2it", "by*"] for t in n.get("tags", []))
+    ]
 
     if not valid_news:
         raise ValueError("Нет актуальных новостей")
 
-    # сортировка по дате
-    valid_news.sort(key=lambda n: n.get("publish_date") or "", reverse=True)
+    # сортируем по дате
+    valid_news.sort(key=lambda n: n.get("publish_date"), reverse=True)
+
     news = valid_news[0]
+
     news_id = str(news["id"])
 
     # ищем английский перевод
     title = None
+
     for tid in news.get("translations", []):
-        tr = await fetch_json(session, f"{TRANSLATION_URL}/{tid}")
-        if tr["data"].get("languages_code") == "en-US":
-            title = tr["data"]["title"]
+
+        translation = await fetch_json(
+            session,
+            f"{TRANSLATION_URL}/{tid}"
+        )
+
+        if translation["data"].get("languages_code") == "en-US":
+            title = translation["data"]["title"]
             break
 
-    # fallback на первый перевод
-    if not title and news.get("translations"):
-        tr = await fetch_json(session, f"{TRANSLATION_URL}/{news['translations'][0]}")
-        title = tr["data"]["title"]
-
+    # fallback если английского нет
     if not title:
-        title = "Новая новость TLSContact"
+        translation = await fetch_json(
+            session,
+            f"{TRANSLATION_URL}/{news['translations'][0]}"
+        )
+        title = translation["data"]["title"]
 
     return news_id, title
 
 
 async def main():
+
     async with aiohttp.ClientSession() as session:
+
         try:
             latest_id, latest_title = await get_latest_news(session)
         except Exception as e:
@@ -99,10 +70,12 @@ async def main():
             last = ""
 
         if latest_id != last:
+
             await send(
                 f"🚨 Новая новость TLSContact:\n\n{latest_title}\n\n"
                 f"https://visas-it.tlscontact.com/en-us/country/by/vac/byMSQ2it/news/{latest_id}"
             )
+
             with open("last.txt", "w") as f:
                 f.write(latest_id)
 
