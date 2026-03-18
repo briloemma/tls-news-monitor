@@ -44,18 +44,18 @@ async def get_latest_news(session):
         ):
             continue
 
-tag_ids = []
+        # корректная обработка tags
+        tag_ids = []
+        for t in n.get("tags", []):
+            if isinstance(t, dict):
+                tag_ids.append(t.get("tags_id"))
+            else:
+                tag_ids.append(t)
 
-for t in n.get("tags", []):
-    if isinstance(t, dict):
-        tag_ids.append(t.get("tags_id"))
-    else:
-        tag_ids.append(t)
+        tag_slugs = [tags_map.get(i) for i in tag_ids]
 
-tag_slugs = [tags_map.get(i) for i in tag_ids]
-
-if any(s and "by" in s for s in tag_slugs):
-    valid_news.append(n)
+        if any(s and "by" in s for s in tag_slugs):
+            valid_news.append(n)
 
     if not valid_news:
         raise ValueError("Нет актуальных новостей")
@@ -66,12 +66,10 @@ if any(s and "by" in s for s in tag_slugs):
     title = None
 
     for tid in news.get("translations", []):
-
         translation = await fetch_json(
             session,
             f"{TRANSLATION_URL}/{tid}"
         )
-
         if translation["data"].get("languages_code") == "en-US":
             title = translation["data"]["title"]
             break
