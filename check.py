@@ -35,20 +35,20 @@ async def get_latest_news(session):
 
     valid_news = []
 
-    for n in data.get("data", []):
+for n in data.get("data", []):
 
-        if not (
-            n.get("status") == "published"
-            and n.get("tenant") == "visa-it"
-            and n.get("show_on_homepage")
-        ):
-            continue
+    if not (
+        n.get("status") == "published"
+        and n.get("tenant") == "visa-it"
+        and n.get("show_on_homepage")
+    ):
+        continue
 
     tag_slugs = [tags_map.get(t) for t in n.get("tags", [])]
 
     if any(s and s.startswith("by") for s in tag_slugs):
-    valid_news.append(n)
-
+        valid_news.append(n)
+        
     if not valid_news:
         raise ValueError("Нет актуальных новостей")
 
