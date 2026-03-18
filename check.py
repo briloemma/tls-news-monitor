@@ -11,7 +11,6 @@ NEWS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news?limit=1000
 TRANSLATION_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news_translations"
 
 bot = Bot(token=BOT_TOKEN)
-@@ -31,70 +31,70 @@
         n for n in data.get("data", [])
         if n.get("status") == "published"
         and n.get("tenant") == "visa-it"
