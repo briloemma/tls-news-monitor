@@ -12,51 +12,61 @@ TAGS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/tags"
 
 bot = Bot(token=BOT_TOKEN)
 
+
 async def send(msg):
     await bot.send_message(chat_id=CHAT_ID, text=msg)
     print("Telegram message sent!")
+
 
 async def fetch_json(session, url):
     async with session.get(url) as r:
         return await r.json()
 
+
 async def get_tags(session):
     data = await fetch_json(session, TAGS_URL)
+    # словарь id -> slug
     return {t["id"]: t["slug"] for t in data.get("data", [])}
+
 
 async def get_latest_news(session):
     tags_map = await get_tags(session)
     data = await fetch_json(session, NEWS_URL)
+
     valid_news = []
 
     for n in data.get("data", []):
         if not (
             n.get("status") == "published"
             and n.get("tenant") == "visa-it"
-            and n.get("show_on_homepage")
+            and n.get("show_on_homepage") is True
         ):
             continue
 
-        # Собираем slug для новости
+        # собираем все ID тегов
         tag_ids = []
         for t in n.get("tags", []):
             if isinstance(t, dict):
                 tag_ids.append(t.get("tags_id"))
             else:
-                tag_ids.append(t)
+                tag_ids.append(t)  # старый формат строки
+
+        # получаем slug через tags_map
         tag_slugs = [tags_map.get(i) for i in tag_ids]
 
+        # проверяем, есть ли хотя бы один slug для BY
         if any(s and s.startswith("by") for s in tag_slugs):
             valid_news.append(n)
 
     if not valid_news:
         raise ValueError("Нет актуальных новостей")
 
-    # Берём самую свежую
+    # сортировка по дате
+    valid_news.sort(key=lambda n: n.get("publish_date") or "", reverse=True)
     news = valid_news[0]
     news_id = str(news["id"])
 
-    # Ищем английский перевод
+    # ищем английский перевод
     title = None
     for tid in news.get("translations", []):
         tr = await fetch_json(session, f"{TRANSLATION_URL}/{tid}")
@@ -73,6 +83,7 @@ async def get_latest_news(session):
         title = "Новая новость TLSContact"
 
     return news_id, title
+
 
 async def main():
     async with aiohttp.ClientSession() as session:
@@ -95,6 +106,7 @@ async def main():
             )
             with open("last.txt", "w") as f:
                 f.write(latest_id)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
