@@ -44,9 +44,9 @@ async def get_latest_news(session):
         ):
             continue
 
-      tag_slugs = [tags_map.get(t) for t in n.get("tags", [])]
+    tag_slugs = [tags_map.get(t) for t in n.get("tags", [])]
 
-if any(s and s.startswith("by") for s in tag_slugs):
+    if any(s and s.startswith("by") for s in tag_slugs):
     valid_news.append(n)
 
     if not valid_news:
