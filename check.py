@@ -11,11 +11,13 @@ NEWS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news?limit=1000
 TRANSLATION_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news_translations"
 
 bot = Bot(token=BOT_TOKEN)
-        n for n in data.get("data", [])
-        if n.get("status") == "published"
-        and n.get("tenant") == "visa-it"
-        and any(t in ["byMSQ2it", "by*"] for t in n.get("tags", []))
-    ]
+
+valid_news = [
+    n for n in data.get("data", [])
+    if n.get("status") == "published"
+    and n.get("tenant") == "visa-it"
+    and any(t in ["byMSQ2it", "by*"] for t in n.get("tags", []))
+]
 
     if not valid_news:
         raise ValueError("Нет актуальных новостей")
