@@ -6,8 +6,9 @@ from telegram import Bot
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
 
-NEWS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news?limit=1000"
+NEWS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news?limit=1000&sort=-publish_date"
 TRANSLATION_URL = "https://cache-cms.directuscloud.tlscontact.com/items/news_translations"
+TAGS_URL = "https://cache-cms.directuscloud.tlscontact.com/items/tags"
 
 bot = Bot(token=BOT_TOKEN)
 
@@ -22,30 +23,38 @@ async def fetch_json(session, url):
         return await r.json()
 
 
+async def get_tags(session):
+    data = await fetch_json(session, TAGS_URL)
+    return {t["id"]: t["slug"] for t in data.get("data", [])}
+
+
 async def get_latest_news(session):
 
+    tags_map = await get_tags(session)
     data = await fetch_json(session, NEWS_URL)
 
-    # фильтрация новостей
-    valid_news = [
-        n for n in data.get("data", [])
-        if n.get("status") == "published"
-        and n.get("tenant") == "visa-it"
-        and n.get("show_on_homepage")
-        and any(t in ["byMSQ2it", "by*"] for t in n.get("tags", []))
-    ]
+    valid_news = []
+
+    for n in data.get("data", []):
+
+        if not (
+            n.get("status") == "published"
+            and n.get("tenant") == "visa-it"
+            and n.get("show_on_homepage")
+        ):
+            continue
+
+        tag_slugs = [tags_map.get(t) for t in n.get("tags", [])]
+
+        if any(s in ["byMSQ2it", "by"] for s in tag_slugs):
+            valid_news.append(n)
 
     if not valid_news:
         raise ValueError("Нет актуальных новостей")
 
-    # сортируем по дате
-    valid_news.sort(key=lambda n: n.get("publish_date"), reverse=True)
-
     news = valid_news[0]
-
     news_id = str(news["id"])
 
-    # ищем английский перевод
     title = None
 
     for tid in news.get("translations", []):
@@ -59,13 +68,15 @@ async def get_latest_news(session):
             title = translation["data"]["title"]
             break
 
-    # fallback если английского нет
-    if not title:
+    if not title and news.get("translations"):
         translation = await fetch_json(
             session,
             f"{TRANSLATION_URL}/{news['translations'][0]}"
         )
         title = translation["data"]["title"]
+
+    if not title:
+        title = "New TLSContact update"
 
     return news_id, title
 
